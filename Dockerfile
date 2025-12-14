@@ -1,5 +1,5 @@
 # Build stage
-FROM node:lts-alpine3.22 AS builder
+FROM node:lts-trixie-slim AS builder
 
 WORKDIR /app
 
@@ -20,7 +20,7 @@ ENV MONGODB_URI=${MONGODB_URI}
 RUN npm run build
 
 # Production stage
-FROM node:20-alpine
+FROM node:lts-trixie-slim
 
 WORKDIR /app
 
