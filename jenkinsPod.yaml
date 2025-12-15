@@ -51,15 +51,22 @@ spec:
           mountPath: /kaniko/.docker
         - name: jenkins-artifacts
           mountPath: /artifacts
-  # - name: alpine-harbor-scanner
-  #   image: alpine
-  #   command:
-  #     - sleep
-  #   args:
-  #     - infinity
-  #   volumeMounts:
-  #     - name: jenkins-artifacts
-  #       mountPath: /artifacts
+    - name: alpine-harbor-scanner
+      image: alpine
+      command:
+        - sleep
+      args:
+        - infinity
+      resources:
+        requests:
+          memory: '500Mi'
+          cpu: '250m'
+        limits:
+          memory: '1Gi'
+          cpu: '500m'
+      volumeMounts:
+        - name: jenkins-artifacts
+          mountPath: /artifacts
   # - name: crane
   #   image: gcr.io/go-containerregistry/crane:debug
   #   command:
