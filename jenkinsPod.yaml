@@ -67,18 +67,18 @@ spec:
       volumeMounts:
         - name: jenkins-artifacts
           mountPath: /artifacts
-    # - name: crane
-    #   image: gcr.io/go-containerregistry/crane:debug
-    #   command:
-    #     - sleep
-    #   args:
-    #     - infinity
-    #   volumeMounts:
-    #     - name: harbor-credentials
-    #       mountPath: /root/.docker/config.json
-    #       subPath: config.json
-    #     - name: jenkins-artifacts
-    #       mountPath: /artifacts
+    - name: crane
+      image: gcr.io/go-containerregistry/crane:debug
+      command:
+        - sleep
+      args:
+        - infinity
+      volumeMounts:
+        - name: harbor-credentials
+          mountPath: /root/.docker/config.json
+          subPath: config.json
+        - name: jenkins-artifacts
+          mountPath: /artifacts
   # - name: helm
   #   image: alpine/helm:3.14.2
   #   command:
