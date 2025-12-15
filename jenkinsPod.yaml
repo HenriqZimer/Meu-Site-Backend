@@ -15,17 +15,24 @@ spec:
         limits:
           memory: '2Gi'
           cpu: '2000m'
-      env:
-        - name: NPM_CONFIG_CACHE
-          value: /tmp/.npm
-        - name: NODE_OPTIONS
-          value: '--max-old-space-size=1536'
-    # - name: sonar-scanner-cli
-    #   image: sonarsource/sonar-scanner-cli:5.0.1
-    #   command:
-    #     - sleep
-    #   args:
-    #     - infinity
+      # env:
+      #   - name: NPM_CONFIG_CACHE
+      #     value: /tmp/.npm
+      #   - name: NODE_OPTIONS
+      #     value: '--max-old-space-size=1536'
+    - name: sonar-scanner-cli
+      image: sonarsource/sonar-scanner-cli:5.0.1
+      command:
+        - sleep
+      args:
+        - infinity
+      resources:
+        requests:
+          memory: '250Mi'
+          cpu: '250m'
+        limits:
+          memory: '500Mi'
+          cpu: '500m'
     # - name: kaniko
     #   image: gcr.io/kaniko-project/executor:debug
     #   command:
