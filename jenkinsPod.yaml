@@ -23,11 +23,16 @@ spec:
         - infinity
       resources:
         requests:
-          memory: '500Mi'
-          cpu: '500m'
-        limits:
           memory: '1Gi'
           cpu: '1000m'
+        limits:
+          memory: '2Gi'
+          cpu: '2000m'
+      env:
+        - name: SONAR_SCANNER_OPTS
+          value: '-Xmx1536m -XX:MaxMetaspaceSize=512m'
+        - name: JAVA_OPTS
+          value: '-Xmx1536m -XX:MaxMetaspaceSize=512m'
     # - name: kaniko
     #   image: gcr.io/kaniko-project/executor:debug
     #   command:
