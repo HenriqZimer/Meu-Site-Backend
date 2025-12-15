@@ -1,4 +1,75 @@
-/data
-Dockerfile
+# Dependencies
 node_modules
+npm-debug.log*
+pnpm-debug.log*
+yarn-debug.log*
+
+# Build outputs
 dist
+build
+.output
+
+# Environment files
+.env
+.env.*
+!.env.example
+
+# Git
+.git
+.gitignore
+.github
+
+# Testing
+coverage
+.nyc_output
+cypress
+cypress.config.mjs
+*.spec.ts
+*.test.ts
+vitest.config.ts
+
+# IDE
+.vscode
+.idea
+*.swp
+*.swo
+
+# CI/CD
+Jenkinsfile
+jenkinsPod.yaml
+sonar-project.properties
+.gitlab-ci.yml
+.travis.yml
+
+# Documentation
+README.md
+CHANGELOG.md
+LICENSE
+*.md
+
+# Docker
+Dockerfile
+.dockerignore
+docker-compose*.yml
+
+# Logs
+logs
+*.log
+
+# Cache
+.npm
+.cache
+.eslintcache
+
+# Temp
+/tmp
+/temp
+.temp
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Development
+/data
+/scripts
