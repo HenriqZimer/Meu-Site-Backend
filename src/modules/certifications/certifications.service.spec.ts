@@ -97,9 +97,7 @@ describe('CertificationsService', () => {
         exec: vi.fn().mockResolvedValue(null),
       });
 
-      await expect(service.findById('999')).rejects.toThrow(
-        'Certificação não encontrada',
-      );
+      await expect(service.findById('999')).rejects.toThrow('Certificação não encontrada');
     });
   });
 });

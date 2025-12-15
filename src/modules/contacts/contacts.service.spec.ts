@@ -136,9 +136,7 @@ describe('ContactsService', () => {
         exec: vi.fn().mockResolvedValue(null),
       });
 
-      await expect(service.delete('999')).rejects.toThrow(
-        'Contato não encontrado',
-      );
+      await expect(service.delete('999')).rejects.toThrow('Contato não encontrado');
     });
   });
 });

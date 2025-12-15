@@ -120,9 +120,7 @@ describe('ProjectsService', () => {
         exec: vi.fn().mockResolvedValue(null),
       });
 
-      await expect(service.findById('999')).rejects.toThrow(
-        'Projeto não encontrado',
-      );
+      await expect(service.findById('999')).rejects.toThrow('Projeto não encontrado');
     });
   });
 });

@@ -63,9 +63,7 @@ describe('SkillsService', () => {
     });
 
     it('should filter by category', async () => {
-      const mockSkills = [
-        { _id: '1', name: 'Docker', category: 'DevOps', active: true },
-      ];
+      const mockSkills = [{ _id: '1', name: 'Docker', category: 'DevOps', active: true }];
 
       mockSkillModel.find.mockReturnValue({
         sort: vi.fn().mockReturnValue({
