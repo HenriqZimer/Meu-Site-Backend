@@ -84,22 +84,6 @@ spec:
           subPath: config.json
         - name: jenkins-artifacts
           mountPath: /artifacts
-    - name: mongodb
-      image: mongo:7
-      args:
-        - --bind_ip_all
-      env:
-        - name: MONGO_INITDB_ROOT_USERNAME
-          value: admin
-        - name: MONGO_INITDB_ROOT_PASSWORD
-          value: admin123
-      resources:
-        requests:
-          memory: '512Mi'
-          cpu: '500m'
-        limits:
-          memory: '1Gi'
-          cpu: '1000m'
   # - name: helm
   #   image: alpine/helm:3.14.2
   #   command:

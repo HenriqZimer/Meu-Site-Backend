@@ -18,6 +18,7 @@
     "test:unit:watch": "vitest",
     "test:unit:ui": "vitest --ui",
     "test:unit:coverage": "vitest run --coverage",
+    "test:coverage": "vitest run --coverage",
     "test:e2e": "start-server-and-test start:test http://localhost:5000 test:e2e:run",
     "test:e2e:run": "cypress run",
     "test:e2e:quick": "start-server-and-test start:test http://localhost:5000 test:e2e:quick:run",
