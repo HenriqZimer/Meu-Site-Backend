@@ -3,16 +3,16 @@ import { Document } from 'mongoose';
 
 @Schema({ timestamps: true })
 export class User extends Document {
-  @Prop({ required: true, unique: true })
+  @Prop({ required: true, unique: true, type: String })
   username: string;
 
-  @Prop({ required: true })
+  @Prop({ required: true, type: String })
   password: string;
 
-  @Prop({ default: 'admin' })
+  @Prop({ default: 'admin', type: String })
   role: string;
 
-  @Prop({ default: true })
+  @Prop({ default: true, type: Boolean })
   active: boolean;
 }
 

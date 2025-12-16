@@ -1,111 +1,38 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { UnauthorizedException } from '@nestjs/common';
+import { AuthService } from './auth.service';
 import * as bcrypt from 'bcrypt';
 
-class MockAuthService {
-  constructor(
-    private readonly userModel: any,
-    private readonly jwtService: any,
-  ) {}
-
-  async login(loginDto: any) {
-    const { username, password } = loginDto;
-
-    if (typeof username !== 'string') {
-      throw new UnauthorizedException('Credenciais inválidas');
-    }
-
-    const user = await this.userModel.findOne({ username: { $eq: username }, active: true });
-    if (!user) {
-      throw new UnauthorizedException('Credenciais inválidas');
-    }
-
-    const isPasswordValid = await bcrypt.compare(password, user.password);
-    if (!isPasswordValid) {
-      throw new UnauthorizedException('Credenciais inválidas');
-    }
-
-    const payload = { sub: user._id, username: user.username, role: user.role };
-    const token = this.jwtService.sign(payload);
-
-    return {
-      access_token: token,
-      user: {
-        id: user._id,
-        username: user.username,
-        role: user.role,
-      },
-    };
-  }
-
-  async createUser(createUserDto: any) {
-    const { username, password, role } = createUserDto;
-
-    if (typeof username !== 'string') {
-      throw new UnauthorizedException('Credenciais inválidas');
-    }
-
-    const existingUser = await this.userModel.findOne({ username: { $eq: username } });
-    if (existingUser) {
-      throw new UnauthorizedException('Usuário já existe');
-    }
-
-    const hashedPassword = await bcrypt.hash(password, 10);
-
-    const user = {
-      _id: 'new-id',
-      username,
-      password: hashedPassword,
-      role: role ?? 'admin',
-      save: vi.fn(),
-    };
-
-    await user.save();
-
-    return {
-      id: user._id,
-      username: user.username,
-      role: user.role,
-    };
-  }
-
-  async validateToken(token: string) {
-    try {
-      const payload = this.jwtService.verify(token);
-      const user = await this.userModel.findById(payload.sub);
-
-      if (!user?.active) {
-        throw new UnauthorizedException();
-      }
-
-      return {
-        id: user._id,
-        username: user.username,
-        role: user.role,
-      };
-    } catch {
-      throw new UnauthorizedException('Token inválido');
-    }
-  }
-}
-
 describe('AuthService', () => {
-  let service: MockAuthService;
+  let authService: AuthService;
   let mockUserModel: any;
   let mockJwtService: any;
 
   beforeEach(() => {
-    mockUserModel = {
-      findOne: vi.fn(),
-      findById: vi.fn(),
-    };
+    const saveMock = vi.fn().mockResolvedValue({
+      _id: 'new-id',
+      username: 'test',
+      role: 'admin',
+    });
+
+    // Create constructor mock
+    mockUserModel = vi.fn().mockImplementation((data) => ({
+      ...data,
+      _id: 'new-id',
+      save: saveMock,
+    }));
+
+    // Add static methods
+    mockUserModel.findOne = vi.fn();
+    mockUserModel.findById = vi.fn();
 
     mockJwtService = {
       sign: vi.fn().mockReturnValue('mock-jwt-token'),
       verify: vi.fn(),
     };
 
-    service = new MockAuthService(mockUserModel, mockJwtService);
+    // Manually instantiate AuthService with mocks
+    authService = new AuthService(mockUserModel, mockJwtService);
   });
 
   describe('login', () => {
@@ -120,8 +47,9 @@ describe('AuthService', () => {
       };
 
       mockUserModel.findOne.mockResolvedValue(mockUser);
+      mockJwtService.sign.mockReturnValue('mock-jwt-token');
 
-      const result = await service.login({ username: 'admin', password: 'password' });
+      const result = await authService.login({ username: 'admin', password: 'password' });
 
       expect(result).toEqual({
         access_token: 'mock-jwt-token',
@@ -137,7 +65,7 @@ describe('AuthService', () => {
       mockUserModel.findOne.mockResolvedValue(null);
 
       await expect(
-        service.login({ username: 'nonexistent', password: 'password' }),
+        authService.login({ username: 'nonexistent', password: 'password' }),
       ).rejects.toThrow(UnauthorizedException);
     });
 
@@ -153,14 +81,14 @@ describe('AuthService', () => {
 
       mockUserModel.findOne.mockResolvedValue(mockUser);
 
-      await expect(service.login({ username: 'admin', password: 'wrong' })).rejects.toThrow(
+      await expect(authService.login({ username: 'admin', password: 'wrong' })).rejects.toThrow(
         UnauthorizedException,
       );
     });
 
     it('should throw UnauthorizedException when username is not a string', async () => {
       await expect(
-        service.login({ username: { $ne: null }, password: 'password' }),
+        authService.login({ username: { $ne: null } as any, password: 'password' }),
       ).rejects.toThrow(UnauthorizedException);
     });
   });
@@ -169,7 +97,7 @@ describe('AuthService', () => {
     it('should create a new user', async () => {
       mockUserModel.findOne.mockResolvedValue(null);
 
-      const result = await service.createUser({
+      const result = await authService.createUser({
         username: 'newuser',
         password: 'password',
         role: 'admin',
@@ -180,19 +108,37 @@ describe('AuthService', () => {
         username: 'newuser',
         role: 'admin',
       });
+      expect(mockUserModel.findOne).toHaveBeenCalledWith({
+        username: { $eq: 'newuser' },
+      });
+    });
+
+    it('should create user with default admin role', async () => {
+      mockUserModel.findOne.mockResolvedValue(null);
+
+      const result = await authService.createUser({
+        username: 'newuser',
+        password: 'password',
+      });
+
+      expect(result.role).toBe('admin');
     });
 
     it('should throw UnauthorizedException if user already exists', async () => {
       mockUserModel.findOne.mockResolvedValue({ username: 'existing' });
 
       await expect(
-        service.createUser({ username: 'existing', password: 'password', role: 'admin' }),
+        authService.createUser({ username: 'existing', password: 'password', role: 'admin' }),
       ).rejects.toThrow(UnauthorizedException);
     });
 
     it('should throw UnauthorizedException when username is not a string', async () => {
       await expect(
-        service.createUser({ username: { $ne: null }, password: 'password', role: 'admin' }),
+        authService.createUser({
+          username: { $ne: null } as any,
+          password: 'password',
+          role: 'admin',
+        }),
       ).rejects.toThrow(UnauthorizedException);
     });
   });
@@ -206,10 +152,12 @@ describe('AuthService', () => {
         active: true,
       };
 
+      // Configure mocks for this specific test
+      mockJwtService.sign.mockReturnValue('mock-jwt-token');
       mockJwtService.verify.mockReturnValue({ sub: '1', username: 'admin', role: 'admin' });
       mockUserModel.findById.mockResolvedValue(mockUser);
 
-      const result = await service.validateToken('valid-token');
+      const result = await authService.validateToken('valid-token');
 
       expect(result).toEqual({
         id: '1',
@@ -223,7 +171,9 @@ describe('AuthService', () => {
         throw new Error('Invalid token');
       });
 
-      await expect(service.validateToken('invalid-token')).rejects.toThrow(UnauthorizedException);
+      await expect(authService.validateToken('invalid-token')).rejects.toThrow(
+        UnauthorizedException,
+      );
     });
 
     it('should throw UnauthorizedException when user is not active', async () => {
@@ -237,7 +187,14 @@ describe('AuthService', () => {
       mockJwtService.verify.mockReturnValue({ sub: '1', username: 'admin', role: 'admin' });
       mockUserModel.findById.mockResolvedValue(mockUser);
 
-      await expect(service.validateToken('valid-token')).rejects.toThrow(UnauthorizedException);
+      await expect(authService.validateToken('valid-token')).rejects.toThrow(UnauthorizedException);
+    });
+
+    it('should throw UnauthorizedException when user is null', async () => {
+      mockJwtService.verify.mockReturnValue({ sub: '1', username: 'admin', role: 'admin' });
+      mockUserModel.findById.mockResolvedValue(null);
+
+      await expect(authService.validateToken('valid-token')).rejects.toThrow(UnauthorizedException);
     });
   });
 });
