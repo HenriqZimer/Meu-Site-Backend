@@ -1,47 +1,47 @@
-# Build stage
+# --- Stage 1: Builder ---
 FROM node:lts-trixie-slim AS builder
 
 WORKDIR /app
 
-# Copy package files
 COPY package*.json ./
 
-# OTIMIZAÇÃO AQUI:
-# Usamos o cache do Docker para guardar os módulos baixados em /root/.npm
-# Isso evita baixar a internet inteira se você mudar uma vírgula no código
+# Instala tudo (dev + prod) com cache para o build
 RUN --mount=type=cache,target=/root/.npm \
   npm ci --prefer-offline --no-audit --progress=false --loglevel=error
 
-# Copy source code
 COPY . .
 
-# Set DB URL for build (accepts from docker-compose build args)
+# Argumentos e variáveis de build
 ARG MONGODB_URI=
 ENV MONGODB_URI=${MONGODB_URI}
 
-# Build application
+# 1. Gera a pasta dist
 RUN npm run build
 
-# Production stage
+# 2. Limpa as dependências de desenvolvimento
+# Isso remove pacotes como typescript, eslint, jest da pasta node_modules
+RUN npm prune --production
+
+# --- Stage 2: Production ---
 FROM node:lts-trixie-slim
 
 WORKDIR /app
 
-# Copy package files and lock file
-COPY package*.json ./
+# OTIMIZAÇÃO: Não precisamos mais rodar npm ci aqui!
+# Copiamos apenas o necessário do estágio builder
 
-# Install production dependencies only
-RUN npm ci --only=production --no-audit && npm cache clean --force
-
-# Copy built application from builder
+# Copia node_modules já limpo (apenas prod)
+COPY --from=builder /app/node_modules ./node_modules
+# Copia o código compilado
 COPY --from=builder /app/dist ./dist
+# Copia package.json (útil para alguns frameworks lerem versão/scripts)
+COPY --from=builder /app/package.json ./
 
-# Expose port
 EXPOSE 5000
 
-# Health check
-HEALTHCHECK --interval=30s --timeout=3s --start-period=40s \
-  CMD node -e "require('http').get('http://localhost:5000/api', (r) => {process.exit(r.statusCode === 404 ? 0 : 1)})"
+# Healthcheck ajustado
+HEALTHCHECK --interval=30s --timeout=3s --start-period=10s \
+  CMD node -e "try { require('http').get('http://localhost:5000/api', (r) => process.exit(r.statusCode === 200 || r.statusCode === 404 ? 0 : 1)) } catch (e) { process.exit(1) }"
 
-# Start application
+# Inicia a aplicação
 CMD ["node", "dist/main"]
