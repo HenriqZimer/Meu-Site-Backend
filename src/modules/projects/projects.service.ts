@@ -6,13 +6,11 @@ import { CreateProjectDto, UpdateProjectDto } from './dto/project.dto';
 
 @Injectable()
 export class ProjectsService {
-  constructor(
-    @InjectModel(Project.name) private projectModel: Model<Project>,
-  ) {}
+  constructor(@InjectModel(Project.name) private projectModel: Model<Project>) {}
 
   async findAll(category?: string, featured?: boolean): Promise<Project[]> {
     const filter: any = { active: true };
-    
+
     if (category && category !== 'all') {
       if (typeof category === 'string') {
         // Use $eq operator to ensure it is treated as a literal value
@@ -112,12 +110,15 @@ export class ProjectsService {
   async getStats(): Promise<{ total: number; byCategory: Record<string, number> }> {
     const projects = await this.projectModel.find({ active: true }).exec();
     const total = projects.length;
-    
-    const byCategory = projects.reduce((acc, project) => {
-      acc[project.category] = (acc[project.category] || 0) + 1;
-      return acc;
-    }, {} as Record<string, number>);
-    
+
+    const byCategory = projects.reduce(
+      (acc, project) => {
+        acc[project.category] = (acc[project.category] || 0) + 1;
+        return acc;
+      },
+      {} as Record<string, number>,
+    );
+
     return { total, byCategory };
   }
 }

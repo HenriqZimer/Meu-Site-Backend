@@ -6,9 +6,7 @@ import { CreateContactDto } from './dto/contact.dto';
 
 @Injectable()
 export class ContactsService {
-  constructor(
-    @InjectModel(Contact.name) private contactModel: Model<Contact>,
-  ) {}
+  constructor(@InjectModel(Contact.name) private contactModel: Model<Contact>) {}
 
   async create(createContactDto: CreateContactDto): Promise<Contact> {
     const contact = new this.contactModel(createContactDto);
@@ -25,11 +23,7 @@ export class ContactsService {
 
   async markAsRead(id: string): Promise<Contact> {
     return this.contactModel
-      .findByIdAndUpdate(
-        id,
-        { read: true, readAt: new Date() },
-        { new: true },
-      )
+      .findByIdAndUpdate(id, { read: true, readAt: new Date() }, { new: true })
       .exec();
   }
 
@@ -38,14 +32,14 @@ export class ContactsService {
     if (!contact) {
       throw new Error('Contact not found');
     }
-    
+
     const newReadState = !contact.read;
     return this.contactModel
       .findByIdAndUpdate(
         id,
-        { 
+        {
           read: newReadState,
-          readAt: newReadState ? new Date() : null
+          readAt: newReadState ? new Date() : null,
         },
         { new: true },
       )

@@ -1,0 +1,26 @@
+# Dependencies
+node_modules
+.pnp
+.pnp.js
+
+# Build outputs
+.nuxt
+.output
+dist
+.vercel
+
+# Cypress cache
+.cypress-cache
+**/.cypress-cache
+
+# Misc
+.DS_Store
+*.log
+.env
+.env.local
+.env.production
+
+# Lock files
+package-lock.json
+yarn.lock
+pnpm-lock.yaml

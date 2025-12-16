@@ -1,13 +1,4 @@
-import {
-  Controller,
-  Get,
-  Post,
-  Put,
-  Delete,
-  Body,
-  Param,
-  Query,
-} from '@nestjs/common';
+import { Controller, Get, Post, Put, Delete, Body, Param, Query } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiQuery } from '@nestjs/swagger';
 import { CertificationsService } from './certifications.service';
 import { CreateCertificationDto, UpdateCertificationDto } from './dto/certification.dto';

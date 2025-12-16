@@ -1,13 +1,4 @@
-import {
-  Controller,
-  Get,
-  Post,
-  Put,
-  Delete,
-  Body,
-  Param,
-  Query,
-} from '@nestjs/common';
+import { Controller, Get, Post, Put, Delete, Body, Param, Query } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiQuery } from '@nestjs/swagger';
 import { ProjectsService } from './projects.service';
 import { CreateProjectDto, UpdateProjectDto } from './dto/project.dto';
@@ -36,10 +27,7 @@ export class ProjectsController {
   @ApiQuery({ name: 'category', required: false, type: String })
   @ApiQuery({ name: 'featured', required: false, type: Boolean })
   @ApiResponse({ status: 200, description: 'Returns all projects' })
-  findAll(
-    @Query('category') category?: string,
-    @Query('featured') featured?: boolean,
-  ) {
+  findAll(@Query('category') category?: string, @Query('featured') featured?: boolean) {
     return this.projectsService.findAll(category, featured);
   }
 

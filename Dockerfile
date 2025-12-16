@@ -1,5 +1,5 @@
 # Build stage
-FROM node:lts-alpine3.22 AS builder
+FROM node:lts-trixie-slim AS builder
 
 WORKDIR /app
 
@@ -7,7 +7,7 @@ WORKDIR /app
 COPY package*.json ./
 
 # Install all dependencies (including dev dependencies for build)
-RUN npm install --production=false --no-optional && npm cache clean --force
+RUN npm ci --prefer-offline --no-audit --progress=false --loglevel=error
 
 # Copy source code
 COPY . .
@@ -20,7 +20,7 @@ ENV MONGODB_URI=${MONGODB_URI}
 RUN npm run build
 
 # Production stage
-FROM node:20-alpine
+FROM node:lts-trixie-slim
 
 WORKDIR /app
 

@@ -6,9 +6,7 @@ import { CreateSkillDto, UpdateSkillDto } from './dto/skill.dto';
 
 @Injectable()
 export class SkillsService {
-  constructor(
-    @InjectModel(Skill.name) private skillModel: Model<Skill>,
-  ) {}
+  constructor(@InjectModel(Skill.name) private skillModel: Model<Skill>) {}
 
   async findAll(): Promise<Skill[]> {
     return this.skillModel.find({ active: true }).sort({ order: 1, name: 1 }).exec();
@@ -27,7 +25,10 @@ export class SkillsService {
   }
 
   async findByCategory(category: string): Promise<Skill[]> {
-    return this.skillModel.find({ category: { $eq: category }, active: true }).sort({ order: 1, name: 1 }).exec();
+    return this.skillModel
+      .find({ category: { $eq: category }, active: true })
+      .sort({ order: 1, name: 1 })
+      .exec();
   }
 
   async create(createSkillDto: CreateSkillDto): Promise<Skill> {
@@ -47,7 +48,7 @@ export class SkillsService {
     const skill = await this.skillModel
       .findByIdAndUpdate(id, { $set: safeUpdate }, { new: true })
       .exec();
-    
+
     if (!skill) {
       throw new NotFoundException(`Skill with ID ${id} not found`);
     }

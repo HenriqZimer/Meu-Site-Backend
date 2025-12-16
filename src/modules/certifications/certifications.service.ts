@@ -6,9 +6,7 @@ import { CreateCertificationDto, UpdateCertificationDto } from './dto/certificat
 
 @Injectable()
 export class CertificationsService {
-  constructor(
-    @InjectModel(Certification.name) private certificationModel: Model<Certification>,
-  ) {}
+  constructor(@InjectModel(Certification.name) private certificationModel: Model<Certification>) {}
 
   async findAll(): Promise<Certification[]> {
     return this.certificationModel.find({ active: true }).sort({ order: 1, date: -1 }).exec();
@@ -27,7 +25,10 @@ export class CertificationsService {
   }
 
   async findByIssuer(issuer: string): Promise<Certification[]> {
-    return this.certificationModel.find({ issuer: { $eq: issuer }, active: true }).sort({ order: 1, date: -1 }).exec();
+    return this.certificationModel
+      .find({ issuer: { $eq: issuer }, active: true })
+      .sort({ order: 1, date: -1 })
+      .exec();
   }
 
   async create(createCertificationDto: CreateCertificationDto): Promise<Certification> {
@@ -49,9 +50,9 @@ export class CertificationsService {
     const safeUpdate: Partial<UpdateCertificationDto> = {};
     for (const key of allowedFields) {
       if (
-        Object.prototype.hasOwnProperty.call(updateCertificationDto, key)
+        Object.prototype.hasOwnProperty.call(updateCertificationDto, key) &&
         // Avoid accidental update operator injection by explicitly blocking '$'-prefixed keys
-        && !key.startsWith('$')
+        !key.startsWith('$')
       ) {
         const value = updateCertificationDto[key];
         // Only assign if value is strictly a safe primitive or a valid Date instance.
@@ -61,10 +62,7 @@ export class CertificationsService {
           typeof value === 'string' ||
           typeof value === 'number' ||
           typeof value === 'boolean' ||
-          (
-            value instanceof Date &&
-            !isNaN(value.valueOf())
-          )
+          (value instanceof Date && !isNaN(value.valueOf()))
         ) {
           safeUpdate[key] = value;
         }
@@ -74,7 +72,7 @@ export class CertificationsService {
     const certification = await this.certificationModel
       .findByIdAndUpdate(id, safeUpdate, { new: true })
       .exec();
-    
+
     if (!certification) {
       throw new NotFoundException(`Certification with ID ${id} not found`);
     }
@@ -91,12 +89,15 @@ export class CertificationsService {
   async getStats(): Promise<{ total: number; byIssuer: Record<string, number> }> {
     const certifications = await this.certificationModel.find({ active: true }).exec();
     const total = certifications.length;
-    
-    const byIssuer = certifications.reduce((acc, cert) => {
-      acc[cert.issuer] = (acc[cert.issuer] || 0) + 1;
-      return acc;
-    }, {} as Record<string, number>);
-    
+
+    const byIssuer = certifications.reduce(
+      (acc, cert) => {
+        acc[cert.issuer] = (acc[cert.issuer] || 0) + 1;
+        return acc;
+      },
+      {} as Record<string, number>,
+    );
+
     return { total, byIssuer };
   }
 }

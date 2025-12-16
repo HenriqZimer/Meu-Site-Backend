@@ -6,13 +6,11 @@ import { CreateCourseDto, UpdateCourseDto } from './dto/course.dto';
 
 @Injectable()
 export class CoursesService {
-  constructor(
-    @InjectModel(Course.name) private courseModel: Model<Course>,
-  ) {}
+  constructor(@InjectModel(Course.name) private courseModel: Model<Course>) {}
 
   async findAll(year?: string): Promise<Course[]> {
     const filter: any = { active: true };
-    
+
     if (year) {
       filter.year = { $eq: year };
     }
@@ -44,7 +42,7 @@ export class CoursesService {
 
   async update(id: string, updateCourseDto: UpdateCourseDto): Promise<Course> {
     // Only allow whitelisted fields from UpdateCourseDto for updating
-    const allowedFields = ['name', 'year', 'order', 'active'];  // Update to allowed UpdateCourseDto fields
+    const allowedFields = ['name', 'year', 'order', 'active']; // Update to allowed UpdateCourseDto fields
     const safeUpdate: any = {};
     for (const field of allowedFields) {
       if (
@@ -58,7 +56,7 @@ export class CoursesService {
     const course = await this.courseModel
       .findByIdAndUpdate(id, { $set: safeUpdate }, { new: true })
       .exec();
-    
+
     if (!course) {
       throw new NotFoundException(`Course with ID ${id} not found`);
     }

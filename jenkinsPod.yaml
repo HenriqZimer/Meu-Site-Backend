@@ -1,0 +1,112 @@
+apiVersion: v1
+kind: Pod
+spec:
+  containers:
+    - name: nodejs
+      image: node:lts-trixie-slim
+      command:
+        - sleep
+      args:
+        - infinity
+      env:
+        - name: NPM_CONFIG_CACHE
+          value: /tmp/.npm
+        - name: NODE_OPTIONS
+          value: '--max-old-space-size=1536'
+      volumeMounts:
+        - name: jenkins-artifacts
+          mountPath: /tmp/.npm
+          subPath: backend-npm-cache
+        - name: jenkins-artifacts
+          mountPath: /app/node_modules
+          subPath: backend-node_modules
+      # resources:
+      #   requests:
+      #     memory: '1Gi'
+      #     cpu: '1000m'
+      #   limits:
+      #     memory: '2Gi'
+      #     cpu: '2000m'
+    - name: sonar-scanner-cli
+      image: sonarsource/sonar-scanner-cli:12.0
+      command:
+        - sleep
+      args:
+        - infinity
+      # resources:
+      #   requests:
+      #     memory: '3Gi'
+      #     cpu: '1500m'
+      #   limits:
+      #     memory: '5Gi'
+      #     cpu: '3000m'
+      # env:
+      #   - name: SONAR_SCANNER_OPTS
+      #     value: '-Xmx4096m -XX:MaxMetaspaceSize=1024m -XX:+UseG1GC'
+      #   - name: JAVA_OPTS
+      #     value: '-Xmx4096m -XX:MaxMetaspaceSize=1024m -XX:+UseG1GC'
+    - name: kaniko
+      image: gcr.io/kaniko-project/executor:debug
+      command:
+        - sleep
+      args:
+        - infinity
+      # resources:
+      #   requests:
+      #     memory: '1Gi'
+      #     cpu: '500m'
+      #   limits:
+      #     memory: '2Gi'
+      #     cpu: '1000m'
+      volumeMounts:
+        - name: harbor-credentials
+          mountPath: /kaniko/.docker
+        - name: jenkins-artifacts
+          mountPath: /artifacts
+    - name: alpine-harbor-scanner
+      image: alpine
+      command:
+        - sleep
+      args:
+        - infinity
+      resources:
+        requests:
+          memory: '500Mi'
+          cpu: '250m'
+        limits:
+          memory: '1Gi'
+          cpu: '500m'
+      volumeMounts:
+        - name: jenkins-artifacts
+          mountPath: /artifacts
+    - name: crane
+      image: gcr.io/go-containerregistry/crane:debug
+      command:
+        - sleep
+      args:
+        - infinity
+      volumeMounts:
+        - name: harbor-credentials
+          mountPath: /root/.docker/config.json
+          subPath: config.json
+        - name: jenkins-artifacts
+          mountPath: /artifacts
+  # - name: helm
+  #   image: alpine/helm:3.14.2
+  #   command:
+  #   - sleep
+  #   args:
+  #   - infinity
+  #   volumeMounts:
+  #     - name: jenkins-artifacts
+  #       mountPath: /artifacts
+  volumes:
+    - name: harbor-credentials
+      secret:
+        secretName: harbor-credentials
+        items:
+          - key: .dockerconfigjson
+            path: config.json
+    - name: jenkins-artifacts
+      persistentVolumeClaim:
+        claimName: jenkins-artifacts-pvc

@@ -1,13 +1,4 @@
-import {
-  Controller,
-  Get,
-  Post,
-  Put,
-  Delete,
-  Body,
-  Param,
-  Query,
-} from '@nestjs/common';
+import { Controller, Get, Post, Put, Delete, Body, Param, Query } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiQuery } from '@nestjs/swagger';
 import { CoursesService } from './courses.service';
 import { CreateCourseDto, UpdateCourseDto } from './dto/course.dto';
