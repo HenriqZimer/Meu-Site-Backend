@@ -26,9 +26,7 @@ describe('ProjectsService', () => {
 
   describe('findAll', () => {
     it('should return all active projects', async () => {
-      const mockProjects = [
-        { _id: '1', title: 'Project 1', active: true },
-      ];
+      const mockProjects = [{ _id: '1', title: 'Project 1', active: true }];
 
       const execMock = vi.fn().mockResolvedValue(mockProjects);
       const sortMock = vi.fn(() => ({ exec: execMock }));
@@ -47,7 +45,7 @@ describe('ProjectsService', () => {
       const sortMock = vi.fn(() => ({ exec: execMock }));
       mockProjectModel.find.mockReturnValue({ sort: sortMock });
 
-      const result = await service.findAll('web');
+      //   const result = await service.findAll('web');
 
       expect(mockProjectModel.find).toHaveBeenCalledWith({
         active: true,
@@ -62,7 +60,7 @@ describe('ProjectsService', () => {
       const sortMock = vi.fn(() => ({ exec: execMock }));
       mockProjectModel.find.mockReturnValue({ sort: sortMock });
 
-      const result = await service.findAll(undefined, true);
+      //   const result = await service.findAll(undefined, true);
 
       expect(mockProjectModel.find).toHaveBeenCalledWith({
         active: true,
