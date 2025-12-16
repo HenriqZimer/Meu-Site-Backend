@@ -6,8 +6,11 @@ WORKDIR /app
 # Copy package files
 COPY package*.json ./
 
-# Install all dependencies (including dev dependencies for build)
-RUN npm ci --prefer-offline --no-audit --progress=false --loglevel=error
+# OTIMIZAÇÃO AQUI:
+# Usamos o cache do Docker para guardar os módulos baixados em /root/.npm
+# Isso evita baixar a internet inteira se você mudar uma vírgula no código
+RUN --mount=type=cache,target=/root/.npm \
+  npm ci --prefer-offline --no-audit --progress=false --loglevel=error
 
 # Copy source code
 COPY . .
