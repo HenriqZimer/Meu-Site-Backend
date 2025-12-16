@@ -3,31 +3,31 @@ import { Document } from 'mongoose';
 
 @Schema({ timestamps: true })
 export class Project extends Document {
-  @Prop({ required: true })
+  @Prop({ required: true, type: String })
   title: string;
 
-  @Prop({ required: true })
+  @Prop({ required: true, type: String })
   description: string;
 
-  @Prop()
+  @Prop({ type: String })
   image: string;
 
-  @Prop({ required: true })
+  @Prop({ required: true, type: String })
   category: string;
 
   @Prop({ type: [String], required: true })
   technologies: string[];
 
-  @Prop()
+  @Prop({ type: String })
   demoUrl: string;
 
-  @Prop()
+  @Prop({ type: String })
   githubUrl: string;
 
-  @Prop({ default: 0 })
+  @Prop({ default: 0, type: Number })
   order: number;
 
-  @Prop({ default: true })
+  @Prop({ default: true, type: Boolean })
   active: boolean;
 }
 

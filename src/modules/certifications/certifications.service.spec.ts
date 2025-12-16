@@ -1,103 +1,151 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-
-class MockCertificationsService {
-  constructor(private readonly certificationModel: any) {}
-
-  async findAll(active = true) {
-    return this.certificationModel.find({ active }).sort({ order: 1 }).exec();
-  }
-
-  async findById(id: string) {
-    const certification = await this.certificationModel.findById(id).exec();
-    if (!certification) {
-      throw new Error('Certificação não encontrada');
-    }
-    return certification;
-  }
-
-  async getStats() {
-    const stats = await this.certificationModel.aggregate([
-      {
-        $facet: {
-          total: [{ $count: 'count' }],
-          active: [{ $match: { active: true } }, { $count: 'count' }],
-          byProvider: [
-            { $group: { _id: '$provider', count: { $sum: 1 } } },
-            { $sort: { count: -1 } },
-          ],
-        },
-      },
-    ]);
-
-    return stats[0];
-  }
-}
+import { NotFoundException } from '@nestjs/common';
+import { CertificationsService } from './certifications.service';
 
 describe('CertificationsService', () => {
-  let service: MockCertificationsService;
+  let service: CertificationsService;
   let mockCertificationModel: any;
 
   beforeEach(() => {
-    mockCertificationModel = {
-      find: vi.fn(),
-      findById: vi.fn(),
-      aggregate: vi.fn(),
-    };
+    // Create constructor mock
+    mockCertificationModel = vi.fn().mockImplementation((data) => ({
+      ...data,
+      _id: 'new-id',
+      save: vi.fn().mockResolvedValue({ _id: 'new-id', ...data }),
+    }));
 
-    service = new MockCertificationsService(mockCertificationModel as any);
+    // Add static methods
+    mockCertificationModel.find = vi.fn();
+    mockCertificationModel.findById = vi.fn();
+    mockCertificationModel.findByIdAndUpdate = vi.fn();
+    mockCertificationModel.findByIdAndDelete = vi.fn();
+    mockCertificationModel.aggregate = vi.fn();
+
+    service = new CertificationsService(mockCertificationModel);
   });
 
   describe('findAll', () => {
     it('should return all active certifications', async () => {
       const mockCertifications = [
-        {
-          _id: '1',
-          name: 'AWS Certified',
-          provider: 'AWS',
-          active: true,
-        },
+        { _id: '1', name: 'AWS Certified', provider: 'AWS', active: true },
       ];
 
-      mockCertificationModel.find.mockReturnValue({
-        sort: vi.fn().mockReturnValue({
-          exec: vi.fn().mockResolvedValue(mockCertifications),
-        }),
-      });
+      const execMock = vi.fn().mockResolvedValue(mockCertifications);
+      const sortMock = vi.fn(() => ({ exec: execMock }));
+      mockCertificationModel.find.mockReturnValue({ sort: sortMock });
 
       const result = await service.findAll();
 
       expect(result).toEqual(mockCertifications);
+      expect(mockCertificationModel.find).toHaveBeenCalledWith({ active: true });
     });
   });
 
-  describe('getStats', () => {
-    it('should return certification statistics', async () => {
-      const mockStats = [
-        {
-          total: [{ count: 5 }],
-          active: [{ count: 4 }],
-          byProvider: [
-            { _id: 'AWS', count: 3 },
-            { _id: 'Google', count: 2 },
-          ],
-        },
+  describe('findAllForAdmin', () => {
+    it('should return all certifications including inactive', async () => {
+      const mockCertifications = [
+        { _id: '1', name: 'Cert 1', active: true },
+        { _id: '2', name: 'Cert 2', active: false },
       ];
 
-      mockCertificationModel.aggregate.mockResolvedValue(mockStats);
+      const execMock = vi.fn().mockResolvedValue(mockCertifications);
+      const sortMock = vi.fn(() => ({ exec: execMock }));
+      mockCertificationModel.find.mockReturnValue({ sort: sortMock });
 
-      const result = await service.getStats();
+      const result = await service.findAllForAdmin();
 
-      expect(result).toEqual(mockStats[0]);
+      expect(result).toEqual(mockCertifications);
+      expect(mockCertificationModel.find).toHaveBeenCalledWith();
     });
   });
 
-  describe('findById', () => {
-    it('should throw error if certification not found', async () => {
-      mockCertificationModel.findById.mockReturnValue({
-        exec: vi.fn().mockResolvedValue(null),
-      });
+  describe('findOne', () => {
+    it('should return a certification by id', async () => {
+      const mockCertification = { _id: '1', name: 'Test' };
 
-      await expect(service.findById('999')).rejects.toThrow('Certificação não encontrada');
+      const execMock = vi.fn().mockResolvedValue(mockCertification);
+      mockCertificationModel.findById.mockReturnValue({ exec: execMock });
+
+      const result = await service.findOne('1');
+
+      expect(result).toEqual(mockCertification);
+    });
+
+    it('should throw NotFoundException if certification not found', async () => {
+      const execMock = vi.fn().mockResolvedValue(null);
+      mockCertificationModel.findById.mockReturnValue({ exec: execMock });
+
+      await expect(service.findOne('999')).rejects.toThrow(NotFoundException);
+    });
+  });
+
+  describe('findByIssuer', () => {
+    it('should return certifications by issuer', async () => {
+      const mockCertifications = [{ _id: '1', issuer: 'AWS', active: true }];
+
+      const execMock = vi.fn().mockResolvedValue(mockCertifications);
+      const sortMock = vi.fn(() => ({ exec: execMock }));
+      mockCertificationModel.find.mockReturnValue({ sort: sortMock });
+
+      const result = await service.findByIssuer('AWS');
+
+      expect(result).toEqual(mockCertifications);
+      expect(mockCertificationModel.find).toHaveBeenCalledWith({
+        issuer: { $eq: 'AWS' },
+        active: true,
+      });
+    });
+  });
+
+  describe('create', () => {
+    it('should create a new certification', async () => {
+      const createDto = { name: 'New Cert', issuer: 'AWS' };
+
+      const result = await service.create(createDto as any);
+
+      expect(result).toBeDefined();
+      expect(result).toMatchObject({ _id: 'new-id', ...createDto });
+      expect(mockCertificationModel).toHaveBeenCalledWith(createDto);
+    });
+  });
+
+  describe('update', () => {
+    it('should update a certification', async () => {
+      const updateDto = { name: 'Updated' };
+      const updatedCert = { _id: '1', ...updateDto };
+
+      const execMock = vi.fn().mockResolvedValue(updatedCert);
+      mockCertificationModel.findByIdAndUpdate.mockReturnValue({ exec: execMock });
+
+      const result = await service.update('1', updateDto);
+
+      expect(result).toEqual(updatedCert);
+    });
+
+    it('should throw NotFoundException if certification not found on update', async () => {
+      const execMock = vi.fn().mockResolvedValue(null);
+      mockCertificationModel.findByIdAndUpdate.mockReturnValue({ exec: execMock });
+
+      await expect(service.update('999', { name: 'Test' })).rejects.toThrow(NotFoundException);
+    });
+  });
+
+  describe('remove', () => {
+    it('should delete a certification', async () => {
+      const execMock = vi.fn().mockResolvedValue({ _id: '1' });
+      mockCertificationModel.findByIdAndDelete.mockReturnValue({ exec: execMock });
+
+      await service.remove('1');
+
+      expect(mockCertificationModel.findByIdAndDelete).toHaveBeenCalledWith('1');
+      expect(execMock).toHaveBeenCalled();
+    });
+
+    it('should throw NotFoundException if certification not found on delete', async () => {
+      const execMock = vi.fn().mockResolvedValue(null);
+      mockCertificationModel.findByIdAndDelete.mockReturnValue({ exec: execMock });
+
+      await expect(service.remove('999')).rejects.toThrow(NotFoundException);
     });
   });
 });

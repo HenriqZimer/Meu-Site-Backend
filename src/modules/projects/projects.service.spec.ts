@@ -1,126 +1,163 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-
-// Mock do ProjectsService sem importar schemas
-class MockProjectsService {
-  constructor(private readonly projectModel: any) {}
-
-  async findAll(active = true) {
-    return this.projectModel.find({ active }).sort({ order: 1 }).exec();
-  }
-
-  async findById(id: string) {
-    const project = await this.projectModel.findById(id).exec();
-    if (!project) {
-      throw new Error('Projeto não encontrado');
-    }
-    return project;
-  }
-
-  async getStats() {
-    const stats = await this.projectModel.aggregate([
-      {
-        $facet: {
-          total: [{ $count: 'count' }],
-          active: [{ $match: { active: true } }, { $count: 'count' }],
-          byTech: [
-            { $unwind: '$technologies' },
-            { $group: { _id: '$technologies', count: { $sum: 1 } } },
-            { $sort: { count: -1 } },
-          ],
-        },
-      },
-    ]);
-
-    return stats[0];
-  }
-}
+import { NotFoundException } from '@nestjs/common';
+import { ProjectsService } from './projects.service';
 
 describe('ProjectsService', () => {
-  let service: MockProjectsService;
+  let service: ProjectsService;
   let mockProjectModel: any;
 
   beforeEach(() => {
-    mockProjectModel = {
-      find: vi.fn(),
-      findById: vi.fn(),
-      create: vi.fn(),
-      findByIdAndUpdate: vi.fn(),
-      findByIdAndDelete: vi.fn(),
-      aggregate: vi.fn(),
-    };
+    // Create constructor mock
+    mockProjectModel = vi.fn().mockImplementation((data) => ({
+      ...data,
+      _id: 'new-id',
+      save: vi.fn().mockResolvedValue({ _id: 'new-id', ...data }),
+    }));
 
-    service = new MockProjectsService(mockProjectModel as any);
+    // Add static methods
+    mockProjectModel.find = vi.fn();
+    mockProjectModel.findById = vi.fn();
+    mockProjectModel.findByIdAndUpdate = vi.fn();
+    mockProjectModel.findByIdAndDelete = vi.fn();
+    mockProjectModel.aggregate = vi.fn();
+
+    service = new ProjectsService(mockProjectModel);
   });
 
   describe('findAll', () => {
     it('should return all active projects', async () => {
       const mockProjects = [
-        {
-          _id: '1',
-          name: 'Portfolio',
-          description: 'Personal portfolio',
-          active: true,
-        },
+        { _id: '1', title: 'Project 1', active: true },
       ];
 
-      mockProjectModel.find.mockReturnValue({
-        sort: vi.fn().mockReturnValue({
-          exec: vi.fn().mockResolvedValue(mockProjects),
-        }),
-      });
+      const execMock = vi.fn().mockResolvedValue(mockProjects);
+      const sortMock = vi.fn(() => ({ exec: execMock }));
+      mockProjectModel.find.mockReturnValue({ sort: sortMock });
 
       const result = await service.findAll();
 
       expect(result).toEqual(mockProjects);
       expect(mockProjectModel.find).toHaveBeenCalledWith({ active: true });
     });
-  });
 
-  describe('getStats', () => {
-    it('should return project statistics', async () => {
-      const mockStats = [
-        {
-          totalProjects: 10,
-          activeProjects: 8,
-          projectsByTechnology: [
-            { _id: 'Docker', count: 5 },
-            { _id: 'Kubernetes', count: 3 },
-          ],
-        },
-      ];
+    it('should filter by category', async () => {
+      const mockProjects = [{ _id: '1', title: 'Project 1', category: 'web', active: true }];
 
-      mockProjectModel.aggregate.mockResolvedValue(mockStats);
+      const execMock = vi.fn().mockResolvedValue(mockProjects);
+      const sortMock = vi.fn(() => ({ exec: execMock }));
+      mockProjectModel.find.mockReturnValue({ sort: sortMock });
 
-      const result = await service.getStats();
+      const result = await service.findAll('web');
 
-      expect(result).toEqual(mockStats[0]);
-      expect(mockProjectModel.aggregate).toHaveBeenCalled();
+      expect(mockProjectModel.find).toHaveBeenCalledWith({
+        active: true,
+        category: { $eq: 'web' },
+      });
+    });
+
+    it('should filter by featured', async () => {
+      const mockProjects = [{ _id: '1', title: 'Project 1', featured: true, active: true }];
+
+      const execMock = vi.fn().mockResolvedValue(mockProjects);
+      const sortMock = vi.fn(() => ({ exec: execMock }));
+      mockProjectModel.find.mockReturnValue({ sort: sortMock });
+
+      const result = await service.findAll(undefined, true);
+
+      expect(mockProjectModel.find).toHaveBeenCalledWith({
+        active: true,
+        featured: true,
+      });
     });
   });
 
-  describe('findById', () => {
+  describe('findAllForAdmin', () => {
+    it('should return all projects including inactive', async () => {
+      const mockProjects = [
+        { _id: '1', title: 'Project 1', active: true },
+        { _id: '2', title: 'Project 2', active: false },
+      ];
+
+      const execMock = vi.fn().mockResolvedValue(mockProjects);
+      const sortMock = vi.fn(() => ({ exec: execMock }));
+      mockProjectModel.find.mockReturnValue({ sort: sortMock });
+
+      const result = await service.findAllForAdmin();
+
+      expect(result).toEqual(mockProjects);
+      expect(mockProjectModel.find).toHaveBeenCalledWith();
+    });
+  });
+
+  describe('findOne', () => {
     it('should return a project by id', async () => {
-      const mockProject = {
-        _id: '1',
-        name: 'Portfolio',
-        description: 'Personal portfolio',
-      };
+      const mockProject = { _id: '1', title: 'Test' };
 
-      mockProjectModel.findById.mockReturnValue({
-        exec: vi.fn().mockResolvedValue(mockProject),
-      });
+      const execMock = vi.fn().mockResolvedValue(mockProject);
+      mockProjectModel.findById.mockReturnValue({ exec: execMock });
 
-      const result = await service.findById('1');
+      const result = await service.findOne('1');
 
       expect(result).toEqual(mockProject);
     });
 
-    it('should throw error if project not found', async () => {
-      mockProjectModel.findById.mockReturnValue({
-        exec: vi.fn().mockResolvedValue(null),
-      });
+    it('should throw NotFoundException if project not found', async () => {
+      const execMock = vi.fn().mockResolvedValue(null);
+      mockProjectModel.findById.mockReturnValue({ exec: execMock });
 
-      await expect(service.findById('999')).rejects.toThrow('Projeto não encontrado');
+      await expect(service.findOne('999')).rejects.toThrow(NotFoundException);
+    });
+  });
+
+  describe('create', () => {
+    it('should create a new project', async () => {
+      const createDto = { title: 'New Project', description: 'Test' };
+
+      const result = await service.create(createDto as any);
+
+      expect(result).toBeDefined();
+      expect(result).toMatchObject({ _id: 'new-id', ...createDto });
+      expect(mockProjectModel).toHaveBeenCalledWith(createDto);
+    });
+  });
+
+  describe('update', () => {
+    it('should update a project', async () => {
+      const updateDto = { title: 'Updated' };
+      const updatedProject = { _id: '1', ...updateDto };
+
+      const execMock = vi.fn().mockResolvedValue(updatedProject);
+      mockProjectModel.findByIdAndUpdate.mockReturnValue({ exec: execMock });
+
+      const result = await service.update('1', updateDto);
+
+      expect(result).toEqual(updatedProject);
+    });
+
+    it('should throw NotFoundException if project not found on update', async () => {
+      const execMock = vi.fn().mockResolvedValue(null);
+      mockProjectModel.findByIdAndUpdate.mockReturnValue({ exec: execMock });
+
+      await expect(service.update('999', { title: 'Test' })).rejects.toThrow(NotFoundException);
+    });
+  });
+
+  describe('remove', () => {
+    it('should delete a project', async () => {
+      const execMock = vi.fn().mockResolvedValue({ _id: '1' });
+      mockProjectModel.findByIdAndDelete.mockReturnValue({ exec: execMock });
+
+      await service.remove('1');
+
+      expect(mockProjectModel.findByIdAndDelete).toHaveBeenCalledWith('1');
+      expect(execMock).toHaveBeenCalled();
+    });
+
+    it('should throw NotFoundException if project not found on delete', async () => {
+      const execMock = vi.fn().mockResolvedValue(null);
+      mockProjectModel.findByIdAndDelete.mockReturnValue({ exec: execMock });
+
+      await expect(service.remove('999')).rejects.toThrow(NotFoundException);
     });
   });
 });
