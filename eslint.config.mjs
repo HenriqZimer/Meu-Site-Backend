@@ -1,12 +1,20 @@
-import typescriptEslint from '@typescript-eslint/eslint-plugin'
-import tsParser from '@typescript-eslint/parser'
-import prettier from 'eslint-plugin-prettier'
-import eslintConfigPrettier from 'eslint-config-prettier'
+import typescriptEslint from '@typescript-eslint/eslint-plugin';
+import tsParser from '@typescript-eslint/parser';
+import prettier from 'eslint-plugin-prettier';
+import eslintConfigPrettier from 'eslint-config-prettier';
 
 export default [
   {
     files: ['**/*.ts'],
-    ignores: ['dist/**', 'node_modules/**', '.eslintrc.js', 'eslint.config.mjs'],
+    ignores: [
+      'dist/**',
+      'node_modules/**',
+      '.eslintrc.js',
+      'eslint.config.mjs',
+      'cypress/**',
+      '**/cypress/**',
+      'vitest.config.ts',
+    ],
     languageOptions: {
       parser: tsParser,
       parserOptions: {
@@ -36,7 +44,6 @@ export default [
           varsIgnorePattern: '^_',
         },
       ],
-      'prettier/prettier': 'error',
     },
   },
-]
+];

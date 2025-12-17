@@ -17,7 +17,7 @@ declare global {
        * Custom command to make authenticated API requests
        * @example cy.apiRequest('GET', '/api/projects')
        */
-      apiRequest(method: string, url: string, body?: any): Chainable<Cypress.Response<any>>
+      apiRequest(method: string, url: string, body?: any): Chainable<Cypress.Response<any>>;
     }
   }
 }
@@ -28,7 +28,7 @@ Cypress.Commands.add('apiRequest', (method: string, url: string, body?: any) => 
     url,
     body,
     failOnStatusCode: false,
-  })
-})
+  });
+});
 
-export {}
+export {};

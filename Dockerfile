@@ -1,34 +1,30 @@
 # --- Stage 1: Builder ---
 FROM node:lts-trixie-slim AS builder
 
+# Seleciona o diretório de trabalho
 WORKDIR /app
 
+# Copia os arquivos de dependências
 COPY package*.json ./
 
-# Instala tudo (dev + prod) com cache para o build
-RUN --mount=type=cache,target=/root/.npm \
-  npm ci --prefer-offline --no-audit --progress=false --loglevel=error
+# Instala dependências
+RUN npm ci
 
+# Copia o código fonte
 COPY . .
 
-# Argumentos e variáveis de build
+# Define a URL do MongoDB para o build
 ARG MONGODB_URI=
 ENV MONGODB_URI=${MONGODB_URI}
 
-# 1. Gera a pasta dist
-RUN npm run build
-
-# 2. Limpa as dependências de desenvolvimento
-# Isso remove pacotes como typescript, eslint, jest da pasta node_modules
-RUN npm prune --production
+# Gera a pasta dist
+RUN npm run build:prod
 
 # --- Stage 2: Production ---
 FROM node:lts-trixie-slim
 
+# Seleciona o diretório de trabalho
 WORKDIR /app
-
-# OTIMIZAÇÃO: Não precisamos mais rodar npm ci aqui!
-# Copiamos apenas o necessário do estágio builder
 
 # Copia node_modules já limpo (apenas prod)
 COPY --from=builder /app/node_modules ./node_modules
@@ -37,6 +33,7 @@ COPY --from=builder /app/dist ./dist
 # Copia package.json (útil para alguns frameworks lerem versão/scripts)
 COPY --from=builder /app/package.json ./
 
+# Expõe a porta
 EXPOSE 5000
 
 # Healthcheck ajustado
