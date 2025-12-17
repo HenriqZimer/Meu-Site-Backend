@@ -8,7 +8,8 @@ WORKDIR /app
 COPY package*.json ./
 
 # Instala dependências
-RUN npm ci
+RUN --mount=type=cache,target=/root/.npm \
+  npm ci --prefer-offline --no-audit --progress=false --loglevel=error
 
 # Copia o código fonte
 COPY . .
