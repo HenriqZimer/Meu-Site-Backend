@@ -10,7 +10,7 @@ describe('CoursesService', () => {
     const mockExec = vi.fn();
     const mockSort = vi.fn(() => ({ exec: mockExec }));
     const mockFind = vi.fn(() => ({ sort: mockSort }));
-    const mockSelect = vi.fn(() => ({ exec: mockExec }));
+    // const mockSelect = vi.fn(() => ({ exec: mockExec }));
 
     const MockModel = vi.fn((data: any) => ({
       ...data,
@@ -204,7 +204,7 @@ describe('CoursesService', () => {
 
       await service.update('1', updateDto);
 
-      const [[id, update]] = mockCourseModel.findByIdAndUpdate.mock.calls;
+      const [[update]] = mockCourseModel.findByIdAndUpdate.mock.calls;
       expect(update.$set).toEqual({ name: 'Test Course' });
       expect(update.$set.notAllowedField).toBeUndefined();
     });
