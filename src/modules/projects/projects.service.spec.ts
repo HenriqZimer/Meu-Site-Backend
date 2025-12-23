@@ -295,11 +295,7 @@ describe('ProjectsService', () => {
       const result = await service.update('1', updateDto as any);
 
       // technologies should be filtered out as it contains non-string values
-      expect(mockProjectModel.findByIdAndUpdate).toHaveBeenCalledWith(
-        '1',
-        {},
-        { new: true },
-      );
+      expect(mockProjectModel.findByIdAndUpdate).toHaveBeenCalledWith('1', {}, { new: true });
     });
 
     it('should accept valid technologies array with only strings', async () => {

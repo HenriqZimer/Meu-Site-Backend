@@ -14,6 +14,7 @@ export default [
       'cypress/**',
       '**/cypress/**',
       'vitest.config.ts',
+      '**/*.spec.ts',
     ],
     languageOptions: {
       parser: tsParser,
