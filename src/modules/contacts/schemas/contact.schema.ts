@@ -3,22 +3,22 @@ import { Document } from 'mongoose';
 
 @Schema({ timestamps: true })
 export class Contact extends Document {
-  @Prop({ required: true, trim: true, maxlength: 100 })
+  @Prop({ type: String, required: true, trim: true, maxlength: 100 })
   name: string;
 
-  @Prop({ required: true, trim: true, lowercase: true, maxlength: 100 })
+  @Prop({ type: String, required: true, trim: true, lowercase: true, maxlength: 100 })
   email: string;
 
-  @Prop({ required: true, trim: true, maxlength: 200 })
+  @Prop({ type: String, required: true, trim: true, maxlength: 200 })
   subject: string;
 
-  @Prop({ required: true, trim: true, maxlength: 1000 })
+  @Prop({ type: String, required: true, trim: true, maxlength: 1000 })
   message: string;
 
-  @Prop({ default: false })
+  @Prop({ type: Boolean, default: false })
   read: boolean;
 
-  @Prop()
+  @Prop({ type: Date })
   readAt?: Date;
 }
 

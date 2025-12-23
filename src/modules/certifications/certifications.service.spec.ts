@@ -128,6 +128,23 @@ describe('CertificationsService', () => {
 
       await expect(service.update('999', { name: 'Test' })).rejects.toThrow(NotFoundException);
     });
+
+    it('should filter out non-allowed fields and operators', async () => {
+      const updateDto = { name: 'Updated', notAllowed: 'value', $operator: 'hack' };
+      const updatedCert = { _id: '1', name: 'Updated' };
+
+      const execMock = vi.fn().mockResolvedValue(updatedCert);
+      mockCertificationModel.findByIdAndUpdate.mockReturnValue({ exec: execMock });
+
+      const result = await service.update('1', updateDto as any);
+
+      expect(result).toEqual(updatedCert);
+      expect(mockCertificationModel.findByIdAndUpdate).toHaveBeenCalledWith(
+        '1',
+        { name: 'Updated' },
+        { new: true }
+      );
+    });
   });
 
   describe('remove', () => {
@@ -146,6 +163,44 @@ describe('CertificationsService', () => {
       mockCertificationModel.findByIdAndDelete.mockReturnValue({ exec: execMock });
 
       await expect(service.remove('999')).rejects.toThrow(NotFoundException);
+    });
+  });
+
+  describe('findByIssuer', () => {
+    it('should return certifications filtered by issuer', async () => {
+      const mockCertifications = [
+        { _id: '1', name: 'AWS Cert', issuer: 'AWS', active: true },
+      ];
+
+      const execMock = vi.fn().mockResolvedValue(mockCertifications);
+      const sortMock = vi.fn(() => ({ exec: execMock }));
+      mockCertificationModel.find.mockReturnValue({ sort: sortMock });
+
+      const result = await service.findByIssuer('AWS');
+
+      expect(result).toEqual(mockCertifications);
+      expect(mockCertificationModel.find).toHaveBeenCalledWith({ issuer: { $eq: 'AWS' }, active: true });
+    });
+  });
+
+  describe('getStats', () => {
+    it('should return statistics with total and by issuer', async () => {
+      const mockCertifications = [
+        { _id: '1', name: 'Cert 1', issuer: 'AWS', active: true },
+        { _id: '2', name: 'Cert 2', issuer: 'AWS', active: true },
+        { _id: '3', name: 'Cert 3', issuer: 'Google', active: true },
+      ];
+
+      const execMock = vi.fn().mockResolvedValue(mockCertifications);
+      mockCertificationModel.find.mockReturnValue({ exec: execMock });
+
+      const result = await service.getStats();
+
+      expect(result).toEqual({
+        total: 3,
+        byIssuer: { AWS: 2, Google: 1 },
+      });
+      expect(mockCertificationModel.find).toHaveBeenCalledWith({ active: true });
     });
   });
 });

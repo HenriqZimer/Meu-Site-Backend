@@ -41,7 +41,8 @@ export class CoursesService {
         courses.filter((c) => c.date).map((c) => new Date(c.date).getFullYear().toString()),
       ),
     ];
-    return years.sort().reverse();
+    const sortedYears = years.sort((a, b) => parseInt(b) - parseInt(a));
+    return sortedYears;
   }
 
   async create(createCourseDto: CreateCourseDto): Promise<Course> {

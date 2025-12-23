@@ -19,6 +19,7 @@ describe('ContactsController', () => {
     service = {
       create: vi.fn(),
       findAll: vi.fn(),
+      findById: vi.fn(),
       markAsRead: vi.fn(),
       toggleRead: vi.fn(),
       delete: vi.fn(),
@@ -73,6 +74,51 @@ describe('ContactsController', () => {
       expect(result.message).toBe('Mensagem marcada como lida');
       expect(result.data.read).toBe(true);
       expect(service.markAsRead).toHaveBeenCalledWith('507f1f77bcf86cd799439011');
+    });
+  });
+
+  describe('findOne', () => {
+    it('should return a contact by ID', async () => {
+      vi.spyOn(service, 'findById').mockResolvedValue(mockContact as any);
+
+      const result = await controller.findOne('507f1f77bcf86cd799439011');
+
+      expect(result.data).toEqual(mockContact);
+      expect(service.findById).toHaveBeenCalledWith('507f1f77bcf86cd799439011');
+    });
+  });
+
+  describe('toggleRead', () => {
+    it('should toggle contact read status to true', async () => {
+      const readContact = { ...mockContact, read: true };
+      vi.spyOn(service, 'toggleRead').mockResolvedValue(readContact as any);
+
+      const result = await controller.toggleRead('507f1f77bcf86cd799439011');
+
+      expect(result.message).toBe('Mensagem marcada como lida');
+      expect(result.data).toEqual(readContact);
+      expect(service.toggleRead).toHaveBeenCalledWith('507f1f77bcf86cd799439011');
+    });
+
+    it('should toggle contact read status to false', async () => {
+      const unreadContact = { ...mockContact, read: false };
+      vi.spyOn(service, 'toggleRead').mockResolvedValue(unreadContact as any);
+
+      const result = await controller.toggleRead('507f1f77bcf86cd799439011');
+
+      expect(result.message).toBe('Mensagem marcada como não lida');
+      expect(result.data).toEqual(unreadContact);
+      expect(service.toggleRead).toHaveBeenCalledWith('507f1f77bcf86cd799439011');
+    });
+  });
+
+  describe('remove', () => {
+    it('should delete a contact', async () => {
+      vi.spyOn(service, 'delete').mockResolvedValue(undefined);
+
+      await controller.remove('507f1f77bcf86cd799439011');
+
+      expect(service.delete).toHaveBeenCalledWith('507f1f77bcf86cd799439011');
     });
   });
 });

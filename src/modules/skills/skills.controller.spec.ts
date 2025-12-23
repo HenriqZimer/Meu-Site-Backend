@@ -23,7 +23,7 @@ describe('SkillsController', () => {
       findAllForAdmin: vi.fn(),
       create: vi.fn(),
       update: vi.fn(),
-      delete: vi.fn(),
+      remove: vi.fn(),
     } as any;
 
     controller = new SkillsController(service);
@@ -59,6 +59,54 @@ describe('SkillsController', () => {
 
       expect(result).toEqual(mockSkill);
       expect(service.findOne).toHaveBeenCalledWith('507f1f77bcf86cd799439011');
+    });
+  });
+
+  describe('findAllForAdmin', () => {
+    it('should return all skills for admin', async () => {
+      const skills = [mockSkill, { ...mockSkill, active: false }];
+      vi.spyOn(service, 'findAllForAdmin').mockResolvedValue(skills as any);
+
+      const result = await controller.findAllForAdmin();
+
+      expect(result).toEqual(skills);
+      expect(service.findAllForAdmin).toHaveBeenCalled();
+    });
+  });
+
+  describe('create', () => {
+    it('should create a new skill', async () => {
+      const createDto = { name: 'New Skill', category: 'frontend' };
+      vi.spyOn(service, 'create').mockResolvedValue(mockSkill as any);
+
+      const result = await controller.create(createDto as any);
+
+      expect(result).toEqual(mockSkill);
+      expect(service.create).toHaveBeenCalledWith(createDto);
+    });
+  });
+
+  describe('update', () => {
+    it('should update a skill', async () => {
+      const updateDto = { name: 'Updated Skill' };
+      const updated = { ...mockSkill, name: 'Updated Skill' };
+      vi.spyOn(service, 'update').mockResolvedValue(updated as any);
+
+      const result = await controller.update('507f1f77bcf86cd799439011', updateDto as any);
+
+      expect(result).toEqual(updated);
+      expect(service.update).toHaveBeenCalledWith('507f1f77bcf86cd799439011', updateDto);
+    });
+  });
+
+  describe('remove', () => {
+    it('should delete a skill', async () => {
+      vi.spyOn(service, 'remove').mockResolvedValue(mockSkill as any);
+
+      const result = await controller.remove('507f1f77bcf86cd799439011');
+
+      expect(result).toEqual(mockSkill);
+      expect(service.remove).toHaveBeenCalledWith('507f1f77bcf86cd799439011');
     });
   });
 });

@@ -1,126 +1,194 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-
-// Mock do SkillsService sem importar schemas
-class MockSkillsService {
-  constructor(private readonly skillModel: any) {}
-
-  async findAll(category?: string, active = true) {
-    const filter: any = { active };
-    if (category) {
-      filter.category = category;
-    }
-    return this.skillModel.find(filter).sort({ order: 1 }).exec();
-  }
-
-  async findById(id: string) {
-    const skill = await this.skillModel.findById(id).exec();
-    if (!skill) {
-      throw new Error('Skill não encontrada');
-    }
-    return skill;
-  }
-
-  async create(createDto: any) {
-    return this.skillModel.create(createDto);
-  }
-}
+import { SkillsService } from './skills.service';
+import { NotFoundException } from '@nestjs/common';
 
 describe('SkillsService', () => {
-  let service: MockSkillsService;
+  let service: SkillsService;
   let mockSkillModel: any;
+  let mockExec: any;
+  let mockSort: any;
 
   beforeEach(() => {
-    // Mock do modelo do Mongoose
-    mockSkillModel = {
-      find: vi.fn(),
-      findById: vi.fn(),
-      findOne: vi.fn(),
-      create: vi.fn(),
-      findByIdAndUpdate: vi.fn(),
-      findByIdAndDelete: vi.fn(),
-    };
+    mockExec = vi.fn();
+    mockSort = vi.fn(() => ({ exec: mockExec }));
+    const mockFind = vi.fn(() => ({ sort: mockSort }));
 
-    service = new MockSkillsService(mockSkillModel as any);
+    const MockModel = vi.fn((data: any) => ({
+      ...data,
+      save: vi.fn().mockResolvedValue({ _id: '1', ...data }),
+    }));
+
+    mockSkillModel = MockModel as any;
+    mockSkillModel.find = mockFind;
+    mockSkillModel.findById = vi.fn(() => ({ exec: mockExec }));
+    mockSkillModel.findByIdAndUpdate = vi.fn(() => ({ exec: mockExec }));
+    mockSkillModel.findByIdAndDelete = vi.fn(() => ({ exec: mockExec }));
+
+    service = new SkillsService(mockSkillModel as any);
   });
 
   describe('findAll', () => {
-    it('should return all active skills by default', async () => {
+    it('should return all active skills sorted by order and name', async () => {
       const mockSkills = [
-        { _id: '1', name: 'Docker', category: 'DevOps', active: true },
-        { _id: '2', name: 'Kubernetes', category: 'DevOps', active: true },
+        { _id: '1', name: 'Docker', category: 'DevOps', active: true, order: 1 },
+        { _id: '2', name: 'Kubernetes', category: 'DevOps', active: true, order: 2 },
       ];
 
-      mockSkillModel.find.mockReturnValue({
-        sort: vi.fn().mockReturnValue({
-          exec: vi.fn().mockResolvedValue(mockSkills),
-        }),
-      });
+      mockExec.mockResolvedValue(mockSkills);
 
       const result = await service.findAll();
 
       expect(result).toEqual(mockSkills);
       expect(mockSkillModel.find).toHaveBeenCalledWith({ active: true });
-    });
-
-    it('should filter by category', async () => {
-      const mockSkills = [{ _id: '1', name: 'Docker', category: 'DevOps', active: true }];
-
-      mockSkillModel.find.mockReturnValue({
-        sort: vi.fn().mockReturnValue({
-          exec: vi.fn().mockResolvedValue(mockSkills),
-        }),
-      });
-
-      const result = await service.findAll('DevOps');
-
-      expect(result).toEqual(mockSkills);
-      expect(mockSkillModel.find).toHaveBeenCalledWith({
-        active: true,
-        category: 'DevOps',
-      });
+      expect(mockSort).toHaveBeenCalledWith({ order: 1, name: 1 });
     });
   });
 
-  describe('findById', () => {
+  describe('findAllForAdmin', () => {
+    it('should return all skills including inactive ones', async () => {
+      const mockSkills = [
+        { _id: '1', name: 'Docker', active: true },
+        { _id: '2', name: 'Old Tech', active: false },
+      ];
+
+      const mockExec = vi.fn().mockResolvedValue(mockSkills);
+      const mockSort = vi.fn(() => ({ exec: mockExec }));
+      mockSkillModel.find.mockReturnValue({ sort: mockSort });
+
+      const result = await service.findAllForAdmin();
+
+      expect(result).toEqual(mockSkills);
+      expect(mockSkillModel.find).toHaveBeenCalledWith();
+      expect(mockSort).toHaveBeenCalledWith({ order: 1, name: 1 });
+    });
+  });
+
+  describe('findOne', () => {
     it('should return a skill by id', async () => {
       const mockSkill = { _id: '1', name: 'Docker', category: 'DevOps' };
 
-      mockSkillModel.findById.mockReturnValue({
-        exec: vi.fn().mockResolvedValue(mockSkill),
-      });
+      const mockExec = vi.fn().mockResolvedValue(mockSkill);
+      mockSkillModel.findById.mockReturnValue({ exec: mockExec });
 
-      const result = await service.findById('1');
+      const result = await service.findOne('1');
 
       expect(result).toEqual(mockSkill);
       expect(mockSkillModel.findById).toHaveBeenCalledWith('1');
     });
 
-    it('should throw error if skill not found', async () => {
-      mockSkillModel.findById.mockReturnValue({
-        exec: vi.fn().mockResolvedValue(null),
-      });
+    it('should throw NotFoundException when skill not found', async () => {
+      const mockExec = vi.fn().mockResolvedValue(null);
+      mockSkillModel.findById.mockReturnValue({ exec: mockExec });
 
-      await expect(service.findById('999')).rejects.toThrow('Skill não encontrada');
+      await expect(service.findOne('invalid-id')).rejects.toThrow(NotFoundException);
+      await expect(service.findOne('invalid-id')).rejects.toThrow('Skill with ID invalid-id not found');
+    });
+  });
+
+  describe('findByCategory', () => {
+    it('should return skills filtered by category', async () => {
+      const mockSkills = [
+        { _id: '1', name: 'Docker', category: 'DevOps', active: true },
+        { _id: '2', name: 'Kubernetes', category: 'DevOps', active: true },
+      ];
+
+      const mockExec = vi.fn().mockResolvedValue(mockSkills);
+      const mockSort = vi.fn(() => ({ exec: mockExec }));
+      mockSkillModel.find.mockReturnValue({ sort: mockSort });
+
+      const result = await service.findByCategory('DevOps');
+
+      expect(result).toEqual(mockSkills);
+      expect(mockSkillModel.find).toHaveBeenCalledWith({
+        category: { $eq: 'DevOps' },
+        active: true,
+      });
+      expect(mockSort).toHaveBeenCalledWith({ order: 1, name: 1 });
     });
   });
 
   describe('create', () => {
     it('should create a new skill', async () => {
       const createDto = {
-        name: 'Jest',
-        category: 'Testing',
-        icon: 'mdi-test',
-        color: '#C21325',
+        name: 'Docker',
+        category: 'DevOps',
+        icon: 'mdi-docker',
+        color: '#2496ED',
       };
 
-      const mockCreatedSkill = { ...createDto, _id: '1', active: true };
+      const result = await service.create(createDto);
 
-      mockSkillModel.create.mockResolvedValue(mockCreatedSkill);
+      expect(result._id).toBe('1');
+      expect(mockSkillModel).toHaveBeenCalledWith(createDto);
+    });
+  });
 
-      const result = await service.create(createDto as any);
+  describe('update', () => {
+    it('should update a skill with allowed fields only', async () => {
+      const updateDto = {
+        name: 'Docker Updated',
+        category: 'DevOps',
+        active: true,
+      };
 
-      expect(result).toEqual(mockCreatedSkill);
-      expect(mockSkillModel.create).toHaveBeenCalledWith(createDto);
+      const mockSkill = { _id: '1', ...updateDto };
+      const mockExec = vi.fn().mockResolvedValue(mockSkill);
+      mockSkillModel.findByIdAndUpdate.mockReturnValue({ exec: mockExec });
+
+      const result = await service.update('1', updateDto);
+
+      expect(result).toEqual(mockSkill);
+      expect(mockSkillModel.findByIdAndUpdate).toHaveBeenCalledWith(
+        '1',
+        { $set: updateDto },
+        { new: true }
+      );
+    });
+
+    it('should throw NotFoundException when skill not found', async () => {
+      const mockExec = vi.fn().mockResolvedValue(null);
+      mockSkillModel.findByIdAndUpdate.mockReturnValue({ exec: mockExec });
+
+      await expect(service.update('invalid-id', { name: 'Test' })).rejects.toThrow(NotFoundException);
+    });
+
+    it('should filter out non-allowed fields', async () => {
+      const updateDto = {
+        name: 'Docker',
+        notAllowedField: 'should be ignored',
+      } as any;
+
+      const mockSkill = { _id: '1', name: 'Docker' };
+      const mockExec = vi.fn().mockResolvedValue(mockSkill);
+      mockSkillModel.findByIdAndUpdate.mockReturnValue({ exec: mockExec });
+
+      await service.update('1', updateDto);
+
+      expect(mockSkillModel.findByIdAndUpdate).toHaveBeenCalledWith(
+        '1',
+        { $set: { name: 'Docker' } },
+        { new: true }
+      );
+    });
+  });
+
+  describe('remove', () => {
+    it('should delete a skill', async () => {
+      const mockSkill = { _id: '1', name: 'Docker' };
+      const mockExec = vi.fn().mockResolvedValue(mockSkill);
+      mockSkillModel.findByIdAndDelete.mockReturnValue({ exec: mockExec });
+
+      await service.remove('1');
+
+      expect(mockSkillModel.findByIdAndDelete).toHaveBeenCalledWith('1');
+    });
+
+    it('should throw NotFoundException when skill not found', async () => {
+      const mockExec = vi.fn().mockResolvedValue(null);
+      mockSkillModel.findByIdAndDelete.mockReturnValue({ exec: mockExec });
+
+      await expect(service.remove('invalid-id')).rejects.toThrow(NotFoundException);
+      await expect(service.remove('invalid-id')).rejects.toThrow('Skill with ID invalid-id not found');
     });
   });
 });

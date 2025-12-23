@@ -140,6 +140,40 @@ describe('ProjectsService', () => {
 
       await expect(service.update('999', { title: 'Test' })).rejects.toThrow(NotFoundException);
     });
+
+    it('should update project with technologies array', async () => {
+      const updateDto = { technologies: ['Vue', 'Node.js'] };
+      const updatedProject = { _id: '1', ...updateDto };
+
+      const execMock = vi.fn().mockResolvedValue(updatedProject);
+      mockProjectModel.findByIdAndUpdate.mockReturnValue({ exec: execMock });
+
+      const result = await service.update('1', updateDto);
+
+      expect(result).toEqual(updatedProject);
+      expect(mockProjectModel.findByIdAndUpdate).toHaveBeenCalledWith(
+        '1',
+        { technologies: ['Vue', 'Node.js'] },
+        { new: true }
+      );
+    });
+
+    it('should filter out non-allowed fields', async () => {
+      const updateDto = { title: 'Updated', notAllowed: 'value', $operator: 'hack' };
+      const updatedProject = { _id: '1', title: 'Updated' };
+
+      const execMock = vi.fn().mockResolvedValue(updatedProject);
+      mockProjectModel.findByIdAndUpdate.mockReturnValue({ exec: execMock });
+
+      const result = await service.update('1', updateDto as any);
+
+      expect(result).toEqual(updatedProject);
+      expect(mockProjectModel.findByIdAndUpdate).toHaveBeenCalledWith(
+        '1',
+        { title: 'Updated' },
+        { new: true }
+      );
+    });
   });
 
   describe('remove', () => {
@@ -158,6 +192,59 @@ describe('ProjectsService', () => {
       mockProjectModel.findByIdAndDelete.mockReturnValue({ exec: execMock });
 
       await expect(service.remove('999')).rejects.toThrow(NotFoundException);
+    });
+  });
+
+  describe('getStats', () => {
+    it('should return statistics with total and by category', async () => {
+      const mockProjects = [
+        { _id: '1', title: 'Project 1', category: 'web', active: true },
+        { _id: '2', title: 'Project 2', category: 'web', active: true },
+        { _id: '3', title: 'Project 3', category: 'mobile', active: true },
+      ];
+
+      const execMock = vi.fn().mockResolvedValue(mockProjects);
+      mockProjectModel.find.mockReturnValue({ exec: execMock });
+
+      const result = await service.getStats();
+
+      expect(result).toEqual({
+        total: 3,
+        byCategory: { web: 2, mobile: 1 },
+      });
+      expect(mockProjectModel.find).toHaveBeenCalledWith({ active: true });
+    });
+  });
+
+  describe('findAll edge cases', () => {
+    it('should ignore category filter when set to "all"', async () => {
+      const mockProjects = [{ _id: '1', title: 'Project 1', active: true }];
+
+      const execMock = vi.fn().mockResolvedValue(mockProjects);
+      const sortMock = vi.fn(() => ({ exec: execMock }));
+      mockProjectModel.find.mockReturnValue({ sort: sortMock });
+
+      const result = await service.findAll('all');
+
+      expect(mockProjectModel.find).toHaveBeenCalledWith({ active: true });
+      expect(result).toEqual(mockProjects);
+    });
+
+    it('should filter by both category and featured', async () => {
+      const mockProjects = [{ _id: '1', title: 'Project 1', category: 'web', featured: true, active: true }];
+
+      const execMock = vi.fn().mockResolvedValue(mockProjects);
+      const sortMock = vi.fn(() => ({ exec: execMock }));
+      mockProjectModel.find.mockReturnValue({ sort: sortMock });
+
+      const result = await service.findAll('web', true);
+
+      expect(mockProjectModel.find).toHaveBeenCalledWith({
+        active: true,
+        category: { $eq: 'web' },
+        featured: true,
+      });
+      expect(result).toEqual(mockProjects);
     });
   });
 });
