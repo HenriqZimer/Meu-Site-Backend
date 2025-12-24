@@ -37,4 +37,4 @@ HEALTHCHECK --interval=30s --timeout=3s --start-period=10s \
   CMD node -e "try { require('http').get('http://localhost:5000/api', (r) => process.exit(r.statusCode === 200 || r.statusCode === 404 ? 0 : 1)) } catch (e) { process.exit(1) }"
 
 # Start the server using the production build
-CMD [ "node", "dist/main.js" ]
+CMD [ "dist/main" ]
