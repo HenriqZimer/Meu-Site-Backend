@@ -6,7 +6,7 @@ import { CreateProjectDto, UpdateProjectDto } from './dto/project.dto';
 
 @Injectable()
 export class ProjectsService {
-  constructor(@InjectModel(Project.name) private projectModel: Model<Project>) {}
+  constructor(@InjectModel(Project.name) private readonly projectModel: Model<Project>) {}
 
   async findAll(category?: string, featured?: boolean): Promise<Project[]> {
     const filter: any = { active: true };
