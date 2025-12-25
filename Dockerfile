@@ -28,6 +28,9 @@ RUN npm prune --production
 # --- Stage 2: Production ---
 FROM cgr.dev/chainguard/node:latest AS production
 
+# Define o diretório de trabalho
+WORKDIR /usr/src/app
+
 # Copia os arquivos empacotados da etapa de build para a imagem de produção
 COPY --chown=node:node --from=builder /usr/src/app/node_modules ./node_modules
 COPY --chown=node:node --from=builder /usr/src/app/dist ./dist
