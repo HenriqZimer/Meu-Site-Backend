@@ -94,9 +94,9 @@ spec:
     - name: helm
       image: alpine/helm:3.14.2
       command:
-      - sleep
+        - sleep
       args:
-      - infinity
+        - infinity
       volumeMounts:
         - name: jenkins-artifacts
           mountPath: /artifacts
