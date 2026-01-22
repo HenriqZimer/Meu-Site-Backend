@@ -41,10 +41,12 @@ export class CertificationsService {
     const allowedFields = [
       'name',
       'issuer',
+      'image',
+      'link',
       'date',
+      'skills',
       'order',
       'active',
-      // add other allowed field names from the Certification schema
     ];
     // Sanitize updateCertificationDto: only allow allowedFields
     const safeUpdate: Partial<UpdateCertificationDto> = {};
