@@ -37,6 +37,7 @@ describe('ContactsService', () => {
       const createDto = {
         name: 'John Doe',
         email: 'john@example.com',
+        subject: 'Test subject',
         message: 'Test message',
       };
 

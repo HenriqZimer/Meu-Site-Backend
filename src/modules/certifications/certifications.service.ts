@@ -56,7 +56,7 @@ export class CertificationsService {
         typeof value === 'string' ||
         typeof value === 'number' ||
         typeof value === 'boolean' ||
-        (value instanceof Date && !isNaN(value.valueOf()))
+        (value instanceof Date && !isNaN((value as Date).valueOf()))
       ) {
         target[field] = value;
       }
