@@ -37,31 +37,40 @@ export class CertificationsService {
   }
 
   async update(id: string, updateCertificationDto: UpdateCertificationDto): Promise<Certification> {
-    // List of allowed fields for update
-    const allowedFields = ['name', 'issuer', 'image', 'link', 'date', 'skills', 'active'];
-    // Sanitize updateCertificationDto: only allow allowedFields
+    // Sanitize updateCertificationDto: only allow known-safe fields with primitive/Date values.
     const safeUpdate: Partial<UpdateCertificationDto> = {};
-    for (const key of allowedFields) {
-      if (
-        Object.prototype.hasOwnProperty.call(updateCertificationDto, key) &&
-        // Avoid accidental update operator injection by explicitly blocking '$'-prefixed keys
-        !key.startsWith('$')
-      ) {
-        const value = updateCertificationDto[key];
-        // Only assign if value is strictly a safe primitive or a valid Date instance.
-        // Completely reject objects and arrays to prevent NoSQL injection.
-        if (
-          value === null ||
-          typeof value === 'string' ||
-          typeof value === 'number' ||
-          typeof value === 'boolean' ||
-          (value instanceof Date && !isNaN(value.valueOf()))
-        ) {
-          safeUpdate[key] = value;
-        }
-        // else: Skip/ignore unsafe types (objects, arrays, functions)
+
+    const assignIfValid = <K extends keyof UpdateCertificationDto>(
+      source: UpdateCertificationDto,
+      target: Partial<UpdateCertificationDto>,
+      field: K,
+    ): void => {
+      if (!Object.prototype.hasOwnProperty.call(source, field)) {
+        return;
       }
-    }
+      const value = source[field];
+      // Only assign if value is strictly a safe primitive or a valid Date instance.
+      // Completely reject objects and arrays to prevent NoSQL injection.
+      if (
+        value === null ||
+        typeof value === 'string' ||
+        typeof value === 'number' ||
+        typeof value === 'boolean' ||
+        (value instanceof Date && !isNaN(value.valueOf()))
+      ) {
+        target[field] = value;
+      }
+      // else: Skip/ignore unsafe types (objects, arrays, functions)
+    };
+
+    assignIfValid(updateCertificationDto, safeUpdate, 'name');
+    assignIfValid(updateCertificationDto, safeUpdate, 'issuer');
+    assignIfValid(updateCertificationDto, safeUpdate, 'image');
+    assignIfValid(updateCertificationDto, safeUpdate, 'link');
+    assignIfValid(updateCertificationDto, safeUpdate, 'date');
+    assignIfValid(updateCertificationDto, safeUpdate, 'skills');
+    assignIfValid(updateCertificationDto, safeUpdate, 'active');
+
     const certification = await this.certificationModel
       .findByIdAndUpdate(id, safeUpdate, { new: true })
       .exec();
