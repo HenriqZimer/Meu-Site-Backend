@@ -53,16 +53,36 @@ export class ProjectsService {
     );
   }
 
-  // Helper: recursively reject any object or array value, or keys starting with "$"
-  private containsMongoOperator(obj: any): boolean {
-    if (Array.isArray(obj)) return true;
-    if (obj && typeof obj === 'object') {
-      for (const k of Object.keys(obj)) {
-        if (k.startsWith('$')) return true;
-        if (this.containsMongoOperator(obj[k])) return true;
-      }
-      return false;
+  // Helper: recursively verify that an update object does not contain MongoDB operators
+  // and only contains safe primitives or arrays of strings (for technologies).
+  private isSafeUpdateObject(obj: any): boolean {
+    if (obj === null || obj === undefined) {
+      return true;
     }
+
+    if (this.isSafePrimitive(obj)) {
+      return true;
+    }
+
+    if (Array.isArray(obj)) {
+      // We only expect arrays of primitive values (e.g., technologies: string[])
+      return obj.every((item) => this.isSafePrimitive(item));
+    }
+
+    if (typeof obj === 'object') {
+      for (const key of Object.keys(obj)) {
+        // Disallow any MongoDB operator keys anywhere in the object graph
+        if (key.startsWith('$')) {
+          return false;
+        }
+        if (!this.isSafeUpdateObject(obj[key])) {
+          return false;
+        }
+      }
+      return true;
+    }
+
+    // Any other types are considered unsafe
     return false;
   }
 
@@ -83,7 +103,7 @@ export class ProjectsService {
 
     for (const key of Object.keys(updateProjectDto)) {
       if (key.startsWith('$')) {
-        // Disallow MongoDB operators
+        // Disallow MongoDB operators at the top level
         continue;
       }
       if (allowedFields.includes(key)) {
@@ -100,10 +120,15 @@ export class ProjectsService {
           sanitizedUpdate[key] = value;
         }
       }
+    // Final defensive validation: ensure no MongoDB operator keys are present
+    if (!this.isSafeUpdateObject(sanitizedUpdate)) {
+      throw new NotFoundException('Invalid update payload'); // or BadRequestException if imported
+    }
+
     }
 
     const project = await this.projectModel
-      .findByIdAndUpdate(id, sanitizedUpdate, { new: true })
+      .findByIdAndUpdate(id, { $set: sanitizedUpdate }, { new: true })
       .exec();
 
     if (!project) {
