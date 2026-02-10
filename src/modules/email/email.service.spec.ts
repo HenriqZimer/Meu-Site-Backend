@@ -93,7 +93,7 @@ describe('EmailService', () => {
       expect(nodemailer.createTransport).toHaveBeenCalledWith(
         expect.objectContaining({
           port: 587,
-        })
+        }),
       );
     });
 
@@ -117,7 +117,7 @@ describe('EmailService', () => {
       expect(nodemailer.createTransport).toHaveBeenCalledWith(
         expect.objectContaining({
           secure: true,
-        })
+        }),
       );
     });
   });
@@ -143,10 +143,10 @@ describe('EmailService', () => {
           to: 'admin@test.com',
           subject: '[Portfolio] Nova mensagem de John Doe',
           html: expect.stringContaining('John Doe'),
-        })
+        }),
       );
       expect(mockLogger.log).toHaveBeenCalledWith(
-        expect.stringContaining('Contact notification sent to admin@test.com')
+        expect.stringContaining('Contact notification sent to admin@test.com'),
       );
     });
 
@@ -160,7 +160,7 @@ describe('EmailService', () => {
 
       expect(result).toBe(false);
       expect(mockLogger.warn).toHaveBeenCalledWith(
-        'Admin email not configured. Skipping notification.'
+        'Admin email not configured. Skipping notification.',
       );
       expect(mockTransporter.sendMail).not.toHaveBeenCalled();
     });
@@ -172,10 +172,7 @@ describe('EmailService', () => {
       const result = await service.sendContactNotification(mockContactData);
 
       expect(result).toBe(false);
-      expect(mockLogger.error).toHaveBeenCalledWith(
-        'Failed to send contact notification:',
-        error
-      );
+      expect(mockLogger.error).toHaveBeenCalledWith('Failed to send contact notification:', error);
     });
 
     it('should include all contact data in email template', async () => {
@@ -224,7 +221,7 @@ describe('EmailService', () => {
       expect(mockTransporter.sendMail).toHaveBeenCalledWith(
         expect.objectContaining({
           from: 'noreply@test.com',
-        })
+        }),
       );
     });
 
@@ -236,7 +233,7 @@ describe('EmailService', () => {
       expect(mockTransporter.sendMail).toHaveBeenCalledWith(
         expect.objectContaining({
           subject: '[Portfolio] Nova mensagem de John Doe',
-        })
+        }),
       );
     });
   });

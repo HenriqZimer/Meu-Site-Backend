@@ -64,7 +64,7 @@ describe('HttpExceptionFilter', () => {
           error: 'HttpException',
           path: '/api/test',
           method: 'GET',
-        })
+        }),
       );
     });
 
@@ -82,7 +82,7 @@ describe('HttpExceptionFilter', () => {
           statusCode: HttpStatus.BAD_REQUEST,
           message: 'Validation failed',
           error: 'Bad Request',
-        })
+        }),
       );
     });
 
@@ -96,7 +96,7 @@ describe('HttpExceptionFilter', () => {
         expect.objectContaining({
           statusCode: HttpStatus.NOT_FOUND,
           message: 'Resource not found',
-        })
+        }),
       );
     });
   });
@@ -115,7 +115,7 @@ describe('HttpExceptionFilter', () => {
           message: 'Database connection failed',
           error: 'Internal Server Error',
           stack: expect.any(String),
-        })
+        }),
       );
     });
 
@@ -131,12 +131,12 @@ describe('HttpExceptionFilter', () => {
           statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
           message: 'Erro interno do servidor',
           error: 'Internal Server Error',
-        })
+        }),
       );
       expect(mockResponse.json).toHaveBeenCalledWith(
         expect.not.objectContaining({
           stack: expect.anything(),
-        })
+        }),
       );
     });
 
@@ -151,7 +151,7 @@ describe('HttpExceptionFilter', () => {
         expect.objectContaining({
           message: 'Erro interno do servidor',
           error: 'Internal Server Error',
-        })
+        }),
       );
     });
 
@@ -164,7 +164,7 @@ describe('HttpExceptionFilter', () => {
       expect(mockResponse.json).toHaveBeenCalledWith(
         expect.objectContaining({
           message: 'Erro desconhecido',
-        })
+        }),
       );
     });
   });
@@ -177,7 +177,7 @@ describe('HttpExceptionFilter', () => {
 
       expect(filter['logger'].error).toHaveBeenCalledWith(
         expect.stringContaining('GET /api/test - Status: 400'),
-        expect.any(String)
+        expect.any(String),
       );
     });
 
@@ -188,10 +188,10 @@ describe('HttpExceptionFilter', () => {
       filter.catch(exception, mockArgumentsHost);
 
       expect(filter['logger'].warn).toHaveBeenCalledWith(
-        expect.stringContaining('Blocked suspicious request')
+        expect.stringContaining('Blocked suspicious request'),
       );
       expect(filter['logger'].warn).toHaveBeenCalledWith(
-        expect.stringContaining('/wp-admin/config.php')
+        expect.stringContaining('/wp-admin/config.php'),
       );
     });
   });
@@ -276,7 +276,7 @@ describe('HttpExceptionFilter', () => {
         expect.objectContaining({
           path: '/api/custom/endpoint',
           method: 'POST',
-        })
+        }),
       );
     });
 
