@@ -98,9 +98,12 @@ describe('AdminSeedService', () => {
           role: 'admin',
         }),
       };
-      mockUserModel = Object.assign(vi.fn(() => mockUser), {
-        findOne: vi.fn(() => ({ exec: mockExec })),
-      });
+      mockUserModel = Object.assign(
+        vi.fn(() => mockUser),
+        {
+          findOne: vi.fn(() => ({ exec: mockExec })),
+        },
+      );
 
       service = new AdminSeedService(mockUserModel, mockConfigService);
       (service as any).logger = mockLogger;
@@ -109,9 +112,7 @@ describe('AdminSeedService', () => {
 
       expect(bcrypt.hash).toHaveBeenCalledWith('testpass123', 10);
       expect(mockUser.save).toHaveBeenCalled();
-      expect(mockLogger.log).toHaveBeenCalledWith(
-        '✅ Admin user created successfully: testadmin'
-      );
+      expect(mockLogger.log).toHaveBeenCalledWith('✅ Admin user created successfully: testadmin');
     });
 
     it('should warn when using default credentials', async () => {
@@ -134,9 +135,12 @@ describe('AdminSeedService', () => {
           role: 'admin',
         }),
       };
-      mockUserModel = Object.assign(vi.fn(() => mockUser), {
-        findOne: vi.fn(() => ({ exec: mockExec })),
-      });
+      mockUserModel = Object.assign(
+        vi.fn(() => mockUser),
+        {
+          findOne: vi.fn(() => ({ exec: mockExec })),
+        },
+      );
 
       service = new AdminSeedService(mockUserModel, mockConfigService);
       (service as any).logger = mockLogger;
@@ -144,10 +148,10 @@ describe('AdminSeedService', () => {
       await service.seedAdminUser();
 
       expect(mockLogger.warn).toHaveBeenCalledWith(
-        expect.stringContaining('Usando credenciais padrão para admin')
+        expect.stringContaining('Usando credenciais padrão para admin'),
       );
       expect(mockLogger.warn).toHaveBeenCalledWith(
-        expect.stringContaining('IMPORTANTE: Altere a senha do admin')
+        expect.stringContaining('IMPORTANTE: Altere a senha do admin'),
       );
     });
 
@@ -178,7 +182,7 @@ describe('AdminSeedService', () => {
       await service.seedAdminUser();
 
       expect(mockLogger.warn).toHaveBeenCalledWith(
-        expect.stringContaining("Usuário 'admin' já existe com role 'user'")
+        expect.stringContaining("Usuário 'admin' já existe com role 'user'"),
       );
     });
 
@@ -190,10 +194,7 @@ describe('AdminSeedService', () => {
       // Should not throw
       await expect(service.seedAdminUser()).resolves.not.toThrow();
 
-      expect(mockLogger.error).toHaveBeenCalledWith(
-        '❌ Error seeding admin user:',
-        mockError
-      );
+      expect(mockLogger.error).toHaveBeenCalledWith('❌ Error seeding admin user:', mockError);
     });
   });
 });

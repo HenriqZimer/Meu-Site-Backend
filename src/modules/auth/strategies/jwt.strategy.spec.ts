@@ -36,7 +36,7 @@ describe('JwtStrategy', () => {
       } as unknown as ConfigService;
 
       expect(() => new JwtStrategy(badConfigService, mockUserModel)).toThrow(
-        'JWT_SECRET não está definido nas variáveis de ambiente'
+        'JWT_SECRET não está definido nas variáveis de ambiente',
       );
     });
 
